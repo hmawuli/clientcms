@@ -59,7 +59,7 @@ class AnalyticsService
     }
 
     /**
-     * Get analytics for a page
+     * Get analytics for a specific page
      */
     public function getPageAnalytics(Page $page, string $period = 'month'): array
     {
@@ -86,7 +86,7 @@ class AnalyticsService
     }
 
     /**
-     * Get unique visitors
+     * Get unique visitors for a page
      */
     private function getUniqueVisitors(Page $page, Carbon $startDate): int
     {
@@ -97,7 +97,7 @@ class AnalyticsService
     }
 
     /**
-     * Get returning visitors
+     * Get returning visitors for a page
      */
     private function getReturningVisitors(Page $page, Carbon $startDate): int
     {
@@ -111,7 +111,7 @@ class AnalyticsService
     }
 
     /**
-     * Get views grouped by day
+     * Get views grouped by day for a page
      */
     private function getViewsByDay(Page $page, Carbon $startDate): array
     {
@@ -125,16 +125,14 @@ class AnalyticsService
             ->orderBy('date')
             ->get();
 
-        return $views->map(function ($item) {
-            return [
-                'date' => $item->date,
-                'views' => $item->count,
-            ];
-        })->toArray();
+        return $views->map(fn($item) => [
+            'date' => $item->date,
+            'views' => $item->count,
+        ])->toArray();
     }
 
     /**
-     * Get top referrers
+     * Get top referrers for a page
      */
     private function getTopReferrers(Page $page, Carbon $startDate): array
     {
@@ -174,15 +172,67 @@ class AnalyticsService
             ->where('viewed_at', '>=', $startDate)
             ->with('visitorSession')
             ->get()
-            ->map(function ($view) {
-                return [
-                    'Date' => $view->viewed_at->format('Y-m-d H:i:s'),
-                    'IP Address' => $view->ip_address,
-                    'User Agent' => $view->user_agent,
-                    'Referrer' => $view->referrer ?? 'Direct',
-                    'Returning Visitor' => $view->visitorSession?->isReturning() ? 'Yes' : 'No',
-                ];
-            })
+            ->map(fn($view) => [
+                'Date' => $view->viewed_at->format('Y-m-d H:i:s'),
+                'IP Address' => $view->ip_address,
+                'User Agent' => $view->user_agent,
+                'Referrer' => $view->referrer ?? 'Direct',
+                'Returning Visitor' => $view->visitorSession?->isReturning() ? 'Yes' : 'No',
+            ])
             ->toArray();
+    }
+
+    /**
+     * Get overall analytics across all pages
+     */
+    public function getOverallAnalytics(string $period = 'month'): array
+    {
+        $startDate = $this->getStartDate($period);
+
+        // Total views across all pages
+        $totalViews = PageView::where('viewed_at', '>=', $startDate)->count();
+
+        // Unique visitors
+        $uniqueVisitors = PageView::where('viewed_at', '>=', $startDate)
+            ->distinct('ip_address')
+            ->count('ip_address');
+
+        // Returning visitors
+        $returningVisitors = VisitorSession::where('page_views', '>', 1)
+            ->where('last_visit', '>=', $startDate)
+            ->count();
+
+        // Views grouped by day
+        $viewsByDay = PageView::where('viewed_at', '>=', $startDate)
+            ->select(
+                DB::raw('DATE(viewed_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(fn($item) => [
+                'date' => $item->date,
+                'views' => $item->count,
+            ])->toArray();
+
+        // Top referrers overall
+        $topReferrers = PageView::where('viewed_at', '>=', $startDate)
+            ->whereNotNull('referrer')
+            ->select('referrer', DB::raw('COUNT(*) as count'))
+            ->groupBy('referrer')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get()
+            ->toArray();
+
+        return [
+            'total_views' => $totalViews,
+            'unique_visitors' => $uniqueVisitors,
+            'returning_visitors' => $returningVisitors,
+            'views_by_day' => $viewsByDay,
+            'top_referrers' => $topReferrers,
+            'period' => $period,
+        ];
     }
 }
