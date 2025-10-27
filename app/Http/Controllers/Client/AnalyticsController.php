@@ -49,6 +49,7 @@ class AnalyticsController extends Controller
         $period = $request->input('period', 'last_30_days');
 
         return Excel::download(
+            
             new AnalyticsExport($page, $period, $this->analyticsService),
             "analytics_{$page->slug}_{$period}.xlsx"
         );

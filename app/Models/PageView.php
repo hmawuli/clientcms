@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PageView extends Model
 {
-    use HasFactory;
+    use HasFactory,SoftDeletes,HasApiTokens;
 
     protected $fillable = [
         'page_id',
