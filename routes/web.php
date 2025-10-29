@@ -83,7 +83,7 @@ Route::middleware(['auth'])->prefix('client')->name('client.')->group(function (
 
 /*
 |--------------------------------------------------------------------------
-| Admin Routes (Optional)
+| Admin Routes 
 |--------------------------------------------------------------------------
 */
 
@@ -106,3 +106,7 @@ Route::get('/', function () {
     }
     return redirect()->route('login');
 });
+
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
