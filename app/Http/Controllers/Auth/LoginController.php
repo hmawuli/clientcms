@@ -5,36 +5,39 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 
+/**
+ * Handles user authentication and login functionality.
+ * This class uses the AuthenticatesUsers trait which contains the core
+ * logic for handling login and logout requests.
+ */
 class LoginController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Login Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles authenticating users for the application and
-    | redirecting them to your home screen. The controller uses a trait
-    | to conveniently provide its functionality to your applications.
-    |
-    */
-
     use AuthenticatesUsers;
 
     /**
-     * Where to redirect users after login.
+     * Where to redirect users after successful login.
      *
      * @var string
      */
-    protected $redirectTo = '/home';
+    protected string $redirectTo = '/dashboard';
 
     /**
      * Create a new controller instance.
-     *
-     * @return void
      */
     public function __construct()
     {
-        $this->middleware('guest')->except('logout');
-        $this->middleware('auth')->only('logout');
+        // Guests can access login and register views; authenticated users can only access logout.
+        //$this->middleware('guest')->except('logout');
+        //$this->middleware('auth')->only('logout');
     }
+
+    /**
+     * If you are logging in using a field other than 'email', uncomment this method
+     * and change the return value to your login field (e.g., 'username').
+     *
+     * public function username(): string
+     * {
+     * return 'username';
+     * }
+     */
 }
