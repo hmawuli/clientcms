@@ -3,19 +3,35 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Client\DashboardController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Client\PageController;
 use App\Http\Controllers\Client\AnalyticsController;
 use App\Http\Controllers\Client\ThemeController;
-use App\Http\Controllers\PublicPageController;
+use App\Http\Controllers\Client\PublicPageController;
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes
+| Public Frontend Routes
+|--------------------------------------------------------------------------
+|
+| These routes serve the public-facing pages of your site.
+| They are accessible without authentication.
+|
+*/
+
+Route::prefix('/')->group(function () {
+    Route::view('/', 'frontend.home')->name('home');
+    Route::view('/about', 'frontend.about')->name('about');
+    Route::view('/services', 'frontend.services')->name('services');
+    Route::view('/contact', 'frontend.contact')->name('contact');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Public Dynamic Page Display (for client-published pages)
 |--------------------------------------------------------------------------
 */
 
-// Public page display
 Route::get('/page/{slug}', [PublicPageController::class, 'show'])
     ->name('public.page');
 
@@ -41,13 +57,15 @@ Route::post('/logout', [AuthController::class, 'logout'])
 |--------------------------------------------------------------------------
 | Client Routes
 |--------------------------------------------------------------------------
+|
+| All authenticated client routes.
+|
 */
 
 Route::middleware(['auth'])->prefix('client')->name('client.')->group(function () {
 
     // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Pages Management
     Route::prefix('pages')->name('pages.')->group(function () {
@@ -83,7 +101,7 @@ Route::middleware(['auth'])->prefix('client')->name('client.')->group(function (
 
 /*
 |--------------------------------------------------------------------------
-| Admin Routes 
+| Admin Routes
 |--------------------------------------------------------------------------
 */
 
@@ -91,22 +109,28 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dashboard', function () {
         return view('admin.dashboard');
     })->name('dashboard');
-
-    // Add more admin routes as needed
 });
 
 /*
 |--------------------------------------------------------------------------
-| Redirect Root to Login or Dashboard
+| Redirect Root (Guest → Login, Auth → Dashboard)
 |--------------------------------------------------------------------------
 */
+
 Route::get('/', function () {
-    if (Auth::check()) { //  Use Auth::check() instead of auth()->check()
-        return redirect()->route('client.dashboard');
-    }
-    return redirect()->route('login');
+    return Auth::check()
+        ? redirect()->route('client.dashboard')
+        : redirect()->route('login');
 });
 
-Auth::routes();
+/*
+|--------------------------------------------------------------------------
+| Fallback Routes (Optional)
+|--------------------------------------------------------------------------
+|
+| For convenience, redirect /home to dashboard.
+|
+*/
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])
+    ->name('home');
